@@ -1,8 +1,13 @@
 
 import tensorflow as tf
 
-dataset = tf.data.experimental.CsvDataset(
-    filenames, record_defaults, compression_type=None, buffer_size=None,
-    header=False, field_delim='\t', use_quote_delim=True,
-    na_value='', select_cols=None, exclude_cols=None
-)
+class ComplEx(tf.keras.Model):
+    def __init__(self,
+        #Model Hyperparamters
+        k = 50,    #K, imposed low rank on embedings
+        l = 0.001, #\lambda, L^2 regularization hyperparamater
+        a = 0.5,  #initial learning rate
+        n = 10,   #negitive samples per positive sample
+    ):
+        super(ComplEx, self).__init__()
+        self.k = 
