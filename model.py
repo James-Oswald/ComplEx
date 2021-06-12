@@ -24,29 +24,29 @@ class ComplEx():
     #See Equations 9-11
     @tf.function
     def score(self, tripplets):
-        ss, rs, os = tripplets[0], tripplets[1], tripplets[2]
+        ss, rs, os = tripplets[:,0], tripplets[:,1], tripplets[:,2]
         #s1 = tf.math.multiply(self.rR[rs], tf.math.multiply(self.rE[ss], self.rE[os]))
         #s2 = tf.math.multiply(self.rR[rs], tf.math.multiply(self.iE[ss], self.iE[os]))
         #s3 = tf.math.multiply(self.iR[rs], tf.math.multiply(self.rE[ss], self.iE[os]))
         #s4 = tf.math.multiply(self.iR[rs], tf.math.multiply(self.iE[ss], self.rE[os]))
-        s1 = tf.gather(self.rR, rs) * tf.gather(self.rE, ss) * tf.gather(self.rE, os)
-        s2 = tf.gather(self.rR, rs) * tf.gather(self.iE, ss) * tf.gather(self.iE, os)
-        s3 = tf.gather(self.iR, rs) * tf.gather(self.rE, ss) * tf.gather(self.iE, os)
-        s4 = tf.gather(self.iR, rs) * tf.gather(self.iE, ss) * tf.gather(self.rE, os)
+        s1 = tf.math.reduce_sum(tf.gather(self.rR, rs) * tf.gather(self.rE, ss) * tf.gather(self.rE, os), 1)
+        s2 = tf.math.reduce_sum(tf.gather(self.rR, rs) * tf.gather(self.iE, ss) * tf.gather(self.iE, os), 1)
+        s3 = tf.math.reduce_sum(tf.gather(self.iR, rs) * tf.gather(self.rE, ss) * tf.gather(self.iE, os), 1)
+        s4 = tf.math.reduce_sum(tf.gather(self.iR, rs) * tf.gather(self.iE, ss) * tf.gather(self.rE, os), 1)
         return s1 + s2 + s3 - s4
 
     #See Appendix A
     @tf.function
     def loss(self, 
         tripplets,      #The batch of tripplets
-        scores,         #The scoring function outputs
-        observations    #The observations (weather a tripplet is a positive or negitive sample)
+        scores         #The scoring function outputs
     ):
-        ss, rs, os = tripplets[0], tripplets[1], tripplets[2]
-        t1 = tf.reduce_sum(tf.math.log(1+tf.math.exp(-1*observations*scores)))
-        t2 = tf.nn.l2_loss(self.rE[ss]) + tf.nn.l2_loss(self.iE[ss]) + \
-            tf.nn.l2_loss(self.rR[rs]) + tf.nn.l2_loss(self.iR[rs]) + \
-            tf.nn.l2_loss(self.rE[os]) + tf.nn.l2_loss(self.iE[os])
+        ss, rs, os, ys = tripplets[:,0], tripplets[:,1], tripplets[:,2], tripplets[:,3]
+        ys = tf.cast(ys, tf.float64)
+        t1 = tf.reduce_sum(tf.math.log(1+tf.math.exp(-1*ys*scores)))
+        t2 = tf.nn.l2_loss(tf.gather(self.rE, ss)) + tf.nn.l2_loss(tf.gather(self.iE, ss)) + \
+            tf.nn.l2_loss(tf.gather(self.rR, rs)) + tf.nn.l2_loss(tf.gather(self.iR, rs)) + \
+            tf.nn.l2_loss(tf.gather(self.rE, os)) + tf.nn.l2_loss(tf.gather(self.iE, os))
         return t1 + self.l * t2
 
 #if __name__ == "__main__":

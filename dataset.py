@@ -32,7 +32,7 @@ class FreeBase15kDataset():
     @tf.function
     def _colsToTensor(self, s, r, o):
         return tf.stack([s, r, o, 1], axis=0)
-
+        
 #Testing Dataset Loading
 if __name__ == "__main__":
     tf.config.run_functions_eagerly(True)
