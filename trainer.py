@@ -26,9 +26,19 @@ class Trainer():
         self.optimizer = tf.keras.optimizers.Adam(a)
 
     @tf.function
-    def genNegitiveSamples(tripplets):
+    def _rangeWithout(end, without):
+        r = tf.range(0, end, dtype=tf.int32)
+        return tf.concat([tf.slice(r, 0, without), tf.slice(r, without, -1)], 0)
+
+    @tf.function
+    def genNegitiveSamples(self, batch):
         #batch * 
-        tf.concat([*tripplets])
+        trueTripplets = tf.stack([batch[0],batch[1],batch[2], tf.ones([32],dtype=tf.int32)], axis=1)
+        allSamples = tf.ones([self.batchSize, 4, self.n],dtype=tf.int32) * tf.expand_dims(trueTripplets, axis=2)
+        allSamples[:,3,1:] = 0
+        for i in tf.range(batch.size[0]): 
+            allSamples[i,2,1:] = tf.random.shuffle(self._rangeWithout(self.dataset.numEntities, allSamples[i,0,0]))[:self.n-1]
+        tf.random.shuffle(tf.transpose(allSamples, [2,0,1]))
         return samples, observations
 
     def train(self):
@@ -36,9 +46,7 @@ class Trainer():
             for batch in self.dataset.train:
                 with tf.GradientTape() as tape:
                     #generate n negitive samples
-                    
-
-
+                    self.genNegitiveSamples(batch)
                     score = self.model.score(batch)
                     prob = tf.sigmoid(score)            #computed Y
                     loss = self.model.loss(score)       

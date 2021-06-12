@@ -19,15 +19,23 @@ class FreeBase15kDataset():
     #Load a FreeBase15k Datafile as a Tensorflow dataset
     def _loadDataset(self, datasetPath:str, name:str)->CsvDataset:
         print(f"Loading {name} Datset")
-        return CsvDataset(
+        dataset = CsvDataset(
             filenames=datasetPath, 
             record_defaults=[tf.int32, tf.int32, tf.int32], 
             field_delim=','
         )
+        return dataset.map(self._colsToTensor)
+    
+    #Convert each tripplet from a tuple of tensors to a single length 4 tensor
+    #the 1 in position [3] marks that this is a positive sample (All true samples are positive)
+    # (Tensor(1, [s]), Tensor(1, [r]), Tensor(1, [o])) ==> Tensor(4, [s,r,o,1])
+    @tf.function
+    def _colsToTensor(self, s, r, o):
+        return tf.stack([s, r, o, 1], axis=0)
 
 #Testing Dataset Loading
 if __name__ == "__main__":
-    #tf.config.run_functions_eagerly(True)
+    tf.config.run_functions_eagerly(True)
     dataset = FreeBase15kDataset().train
     dataset.batch(32)
     i = 0
