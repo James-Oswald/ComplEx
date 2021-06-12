@@ -41,7 +41,7 @@ class Trainer():
     #
     #
     #
-    #@tf.function
+    @tf.function
     def _genNegitiveSamples(self, tripplet, numNegSamples):
         """Generates numNegSamples negitive samples for a given tripplet using the local closed world assumption.
         Params:
@@ -51,7 +51,7 @@ class Trainer():
         -A Tensor ( shape (numNegSamples+1)x4 ) of corrupted tripplets, including the original tripplet as its final element
             [s, r, o, 1] => [[#, r, o, 0], [s, r, #, 0], ..., [s, r, o, 1]]
         """
-        s, _, o, _ = tripplet
+        s, o = tripplet[0], tripplet[2]
         #The list of corrupted head/tails, local closed world assumption. See Trouillon et al. 2016 section 4.2 paragraph 2
         #generate a range excluding head and tail (these are entity IDs exculding the true entities)
         #ISSUE with this is you cant ever generate the inverse as a negitive sample, this really needs to be revisted
