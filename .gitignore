@@ -1,4 +1,4 @@
 /dataset/*.txt
 /dataset/*.pkl
 !/dataset/README.txt
-__pycahce___
+__pycache__
