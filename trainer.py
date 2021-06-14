@@ -75,11 +75,11 @@ class Trainer():
         #  [0, 0, 1, 0], ...]  [1, 1, 0, 1], ...]
         invCorPos = tf.cast(tf.math.logical_not(tf.cast(corPos, tf.bool)), tf.int32)
 
-        #[s,r,o,1] => [s,r,o,0]
-        negTripplet = tf.concat([tripplet[:-1],[0]],axis=0)
+        #[s,r,o,1] => [s,r,o,-1]
+        negTripplet = tf.concat([tripplet[:-1],[-1]],axis=0)
         #corrupted Samples
-        #[s,r,o,0] => [[s,r,o,0],
-        #              [s,r,o,0], ...] (repeated numNegSamples times)
+        #[s,r,o,0] => [[s,r,o,-1],
+        #              [s,r,o,-1], ...] (repeated numNegSamples times)
         tiledSamples = tf.tile([negTripplet],[numNegSamples,1])
         
         #The corrupted data in the right location
@@ -87,12 +87,12 @@ class Trainer():
         #  [0, 0, 1, 0]   [1, 1, 1, 1]   [0, 0, 1, 0]
         corEntMat = corPos * tiledCorEnt
         #Samples with corrupted entries set to 0
-        #  [0, 1, 1, 1] * [s, r, o, 0] = [0, r, o, 0]
-        #  [1, 1, 0, 1]   [s, r, o, 0]   [s, r, 0, 0]
+        #  [0, 1, 1, 1] * [s, r, o, 0] = [0, r, o, -1]
+        #  [1, 1, 0, 1]   [s, r, o, 0]   [s, r, 0, -1]
         cor0Samples = invCorPos * tiledSamples
         #True corrupted Samples
-        #  [4, 0, 0, 0] * [0, r, o, 0] = [4, r, o, 0]
-        #  [0, 0, 1, 0]   [s, r, 0, 0]   [s, r, 1, 0]
+        #  [4, 0, 0, 0] * [0, r, o, -1] = [4, r, o, -1]
+        #  [0, 0, 1, 0]   [s, r, 0, -1]   [s, r, 1, -1]
         corSamples = corEntMat + cor0Samples
         #combine the corrupt samples with true samples
         samples = tf.concat([corSamples, [tripplet]],axis=0)
