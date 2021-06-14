@@ -3,13 +3,14 @@ import tensorflow as tf
 from dataset import FreeBase15kDataset
 from tensorflow.python.keras.backend import l2_normalize
 
-class ComplEx():
+class ComplEx(tf.keras.Model):
     def __init__(self,
         #Model Hyperparamters
         dataset:FreeBase15kDataset,
         k:int = 50,    #K, imposed low rank on embedings
         l:float = 0.001, #\lambda, L^2 regularization hyperparamater
     ):
+        super(ComplEx, self).__init__()
         self.dataset = dataset
         self.k = k
         self.l = l
@@ -19,7 +20,7 @@ class ComplEx():
         self.iE = tf.Variable(tf.experimental.numpy.random.randn(dataset.numEntities, k))
         self.rR = tf.Variable(tf.experimental.numpy.random.randn(dataset.numRelations, k))
         self.iR = tf.Variable(tf.experimental.numpy.random.randn(dataset.numRelations, k))
-        self.trainable =[self.rE, self.iE, self.rR, self.iR]
+        #self.trainable =[self.rE, self.iE, self.rR, self.iR]
 
     #See Equations 9-11
     @tf.function
@@ -43,11 +44,16 @@ class ComplEx():
     ):
         ss, rs, os, ys = tripplets[:,0], tripplets[:,1], tripplets[:,2], tripplets[:,3]
         ys = tf.cast(ys, tf.float64)
-        t1 = tf.reduce_sum(tf.math.log(1+tf.math.exp(-1*ys*scores)))
+        t1 = tf.reduce_sum(tf.keras.activations.softplus(-1*ys*scores))
         t2 = tf.nn.l2_loss(tf.gather(self.rE, ss)) + tf.nn.l2_loss(tf.gather(self.iE, ss)) + \
             tf.nn.l2_loss(tf.gather(self.rR, rs)) + tf.nn.l2_loss(tf.gather(self.iR, rs)) + \
             tf.nn.l2_loss(tf.gather(self.rE, os)) + tf.nn.l2_loss(tf.gather(self.iE, os))
         return t1 + self.l * t2
+
+    @tf.function
+    def call(self, inputs):
+        return self.score(inputs)
+    
 
 #if __name__ == "__main__":
 #    a = tf.constant([1,2,3])

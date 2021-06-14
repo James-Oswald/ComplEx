@@ -18,8 +18,8 @@ class Trainer():
         self.maxEpochs = maxEpochs
         self.earlyStopping = earlyStopping
         self.batchSize = batchSize
-        self.a = a
-        self.n = n
+        self.a:tf.float64 = a
+        self.n:tf.int32 = n
         
         self.dataset = self.model.dataset
         self.dataset.train = self.dataset.train.batch(self.batchSize)
@@ -37,12 +37,8 @@ class Trainer():
         rv = tf.concat([rv, tf.slice(r, [without[-2]], [-1])], 0)
         return rv
 
-    # 
-    #
-    #
-    #
     @tf.function
-    def _genNegitiveSamples(self, tripplet, numNegSamples):
+    def _genNegitiveSamples(self, tripplet:tf.Tensor, numNegSamples:tf.int32)->tf.Tensor:
         """Generates numNegSamples negitive samples for a given tripplet using the local closed world assumption.
         Params:
         -tripplet: A True KG tripplet Tensor containing (Subject, Relation, Object, True) 
@@ -102,26 +98,40 @@ class Trainer():
         samples = tf.concat([corSamples, [tripplet]],axis=0)
         return samples
 
-    #@tf.function
-    def _genNegSamplesForBatch(self, batch):
-        batchSamples = tf.zeros([0, 4], dtype=tf.int32)
+    @tf.function
+    def _genNegSamplesForBatch(self, batch:tf.Tensor)->tf.Tensor:
+        #In tf.functions, this loop will be unrolled, we cant append to a fixed size tensor using concat
+        #instead we need to use tf.TensorArray
+        numSamples = (self.n + 1) * batch.shape[0]
+        numSamplesM1 = (self.n + 1) * (batch.shape[0] - 1)
+        batchSamples = tf.zeros([numSamples, 4], tf.int32)
+        i = 0
         for tripplet in batch:
             trippletSamples = self._genNegitiveSamples(tripplet, self.n)
-            batchSamples = tf.concat([batchSamples, trippletSamples], axis=0)
+            #Zero extented tripplet samples
+            zeroExtTrippletSamp = tf.concat([trippletSamples, tf.zeros([numSamplesM1, 4], dtype=tf.int32)], axis=0)
+            batchSamples = batchSamples + tf.roll(zeroExtTrippletSamp, shift=i*(self.n + 1), axis=0)
+            i += 1
         batchSamples = tf.random.shuffle(batchSamples)
         return batchSamples 
 
+    @tf.function
+    def trainStep(self, batch):
+        with tf.GradientTape() as tape:
+            #generate n negitive samples
+            batch = self._genNegSamplesForBatch(batch)
+            score = self.model(batch, training=True)
+            #prob = tf.sigmoid(score)            #computed Y
+            loss = self.model.loss(batch, score)       
+        grads = tape.gradient(loss, self.model.trainable_weights)
+        self.optimizer.apply_gradients(zip(grads, self.model.trainable_weights))
+        return loss
+
+    
     def train(self):
         for epoch in range(self.maxEpochs):
             for batchNum, batch in enumerate(self.dataset.train):
-                with tf.GradientTape() as tape:
-                    #generate n negitive samples
-                    batch = self._genNegSamplesForBatch(batch)
-                    score = self.model.score(batch)
-                    prob = tf.sigmoid(score)            #computed Y
-                    loss = self.model.loss(batch, score)       
-                grads = tape.gradient(loss, self.model.trainable)
-                self.optimizer.apply_gradients(zip(grads, self.model.trainable))
+                loss = self.trainStep(batch)
                 print(f"Batch {batchNum}/{272155//32}: Loss {loss}")
             print(f"Epoch {epoch}: Loss {loss}")
 
