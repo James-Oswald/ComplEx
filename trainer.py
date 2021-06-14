@@ -132,12 +132,14 @@ class Trainer():
         for epoch in range(self.maxEpochs):
             for batchNum, batch in enumerate(self.dataset.train):
                 loss = self.trainStep(batch)
-                print(f"Batch {batchNum}/{272155//32}: Loss {loss}")
+                if batchNum % 100 == 0:
+                    print(f"Batch {batchNum}/{272155//32}: Loss {loss}")
             print(f"Epoch {epoch}: Loss {loss}")
 
 if __name__ == "__main__":
     #tf.config.run_functions_eagerly(True)
-    dataset = FreeBase15kDataset()
-    model = ComplEx(dataset)           
-    trainer = Trainer(model)
-    trainer.train()
+    with tf.device('/GPU:0'):
+        dataset = FreeBase15kDataset()
+        model = ComplEx(dataset)           
+        trainer = Trainer(model)
+        trainer.train()
