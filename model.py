@@ -15,12 +15,15 @@ class ComplEx(tf.keras.Model):
         self.k = k
         self.l = l
 
-        #K by n 
+
+        # numEntities by K
         self.rE = tf.Variable(tf.experimental.numpy.random.randn(dataset.numEntities, k))
+        # numEntities by K
         self.iE = tf.Variable(tf.experimental.numpy.random.randn(dataset.numEntities, k))
+        # numRelations by K
         self.rR = tf.Variable(tf.experimental.numpy.random.randn(dataset.numRelations, k))
+        # numRelations by K
         self.iR = tf.Variable(tf.experimental.numpy.random.randn(dataset.numRelations, k))
-        #self.trainable =[self.rE, self.iE, self.rR, self.iR]
 
     #See Equations 9-11
     @tf.function

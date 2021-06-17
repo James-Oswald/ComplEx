@@ -39,7 +39,7 @@ if __name__ == "__main__":
     dataset = FreeBase15kDataset().train
     dataset.batch(32)
     i = 0
-    for element in dataset.as_numpy_iterator():   #print the fist 10 dataset elements as a test
+    for element in dataset:   #print the fist 10 dataset elements as a test
         print(element)
         i = i + 1
         if i > 10:

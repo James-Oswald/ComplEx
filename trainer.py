@@ -1,5 +1,4 @@
 
-
 import tensorflow as tf
 from tensorflow.python.ops.numpy_ops.np_math_ops import negative
 from dataset import FreeBase15kDataset
@@ -137,7 +136,7 @@ class Trainer():
             print(f"Epoch {epoch}: Loss {loss}")
 
 if __name__ == "__main__":
-    #tf.config.run_functions_eagerly(True)
+    tf.config.run_functions_eagerly(True)
     with tf.device('/GPU:0'):
         dataset = FreeBase15kDataset()
         model = ComplEx(dataset)           
